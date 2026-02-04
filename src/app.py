@@ -67,11 +67,22 @@ class BTCWidget:
         )
         self.highlow_label.pack(anchor="w")
 
+        # 24h range bar canvas
+        self.range_canvas = tk.Canvas(
+            self.frame,
+            width=200,
+            height=16,
+            bg=COLOR_BACKGROUND,
+            highlightthickness=0
+        )
+        self.range_canvas.pack(anchor="w", pady=(4, 0))
+
     def _bind_events(self):
         """Bind mouse and keyboard events."""
         # Make window draggable by clicking anywhere
         for widget in [self.root, self.frame, self.price_row,
-                       self.price_label, self.change_label, self.highlow_label]:
+                       self.price_label, self.change_label,
+                       self.highlow_label, self.range_canvas]:
             self.draggable.bind_drag_events(widget)
 
         # Right-click context menu
@@ -102,6 +113,55 @@ class BTCWidget:
             self.pending_data = None
         self.root.after(50, self._check_updates)  # Check every 50ms
 
+    def _draw_range_bar(self, price, low_24h, high_24h, change_color):
+        """Draw the 24h range bar with current price indicator."""
+        self.range_canvas.delete("all")
+
+        width = 200
+        height = 16
+        bar_y = height // 2
+        padding = 8
+        bar_width = width - (padding * 2)
+
+        # Draw the range line
+        self.range_canvas.create_line(
+            padding, bar_y,
+            width - padding, bar_y,
+            fill="#444444",
+            width=3
+        )
+
+        # Draw low marker
+        self.range_canvas.create_oval(
+            padding - 3, bar_y - 3,
+            padding + 3, bar_y + 3,
+            fill="#888888",
+            outline=""
+        )
+
+        # Draw high marker
+        self.range_canvas.create_oval(
+            width - padding - 3, bar_y - 3,
+            width - padding + 3, bar_y + 3,
+            fill="#888888",
+            outline=""
+        )
+
+        # Calculate current price position
+        price_range = high_24h - low_24h
+        if price_range > 0:
+            position = (price - low_24h) / price_range
+            position = max(0, min(1, position))  # Clamp between 0 and 1
+            dot_x = padding + (position * bar_width)
+
+            # Draw current price dot
+            self.range_canvas.create_oval(
+                dot_x - 5, bar_y - 5,
+                dot_x + 5, bar_y + 5,
+                fill=change_color,
+                outline=""
+            )
+
     def _display_price(self, data):
         """Update the display with new price data."""
         price = data["price"]
@@ -120,8 +180,11 @@ class BTCWidget:
         self.change_label.config(text=change_text, fg=change_color)
 
         # Update 24h high/low
-        highlow_text = f"H: ${high_24h:,.0f}  L: ${low_24h:,.0f}"
+        highlow_text = f"L: ${low_24h:,.0f}  —  H: ${high_24h:,.0f}"
         self.highlow_label.config(text=highlow_text)
+
+        # Update range bar
+        self._draw_range_bar(price, low_24h, high_24h, change_color)
 
     def _exit(self):
         """Clean up and exit."""

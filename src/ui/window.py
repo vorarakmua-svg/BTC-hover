@@ -20,7 +20,7 @@ def create_transparent_window() -> tk.Tk:
 
     # Set window size and position (top-right corner)
     window_width = 220
-    window_height = 80
+    window_height = 100
     screen_width = root.winfo_screenwidth()
     x_position = screen_width - window_width - 20
     y_position = 20
